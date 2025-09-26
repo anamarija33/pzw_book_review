@@ -14,7 +14,7 @@ from flask_mail import Mail, Message
 from dotenv import load_dotenv
 import os
 from flask_principal import Principal, Permission, RoleNeed, Identity, identity_changed, identity_loaded, UserNeed, Need
-
+load_dotenv() 
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY')  # Ovo postavljamo kao tajni ključ za sigurnost
