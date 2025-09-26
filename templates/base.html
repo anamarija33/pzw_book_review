@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/{{current_user.theme}}/bootstrap.min.css">
     {% endif %}
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
     <div class="container-fluid ">
         {% from 'bootstrap5/nav.html' import render_nav_item %}
         <nav class="navbar navbar-expand-lg navbar-light bg-secondary mb-3 sticky-top">
@@ -25,12 +25,7 @@
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            {% if request.endpoint == 'index' %}
-            <form class="d-flex" method="GET" action="{{ url_for('index') }}">
-                <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-                <button class="btn btn-outline-dark" type="submit">Pretraži</button>
-              </form>
-            {% endif %}
+
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     {% if current_user.is_authenticated %}
@@ -75,7 +70,7 @@
         {% block body %}
         {% endblock %}
 
-        <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4">
+        <footer class="mt-auto d-flex flex-wrap justify-content-between align-items-center py-3 my-4 ">
             <p class="col-md-6 mb-0 text-body-secondary">Book reviews</p>
         </footer>
     </div>

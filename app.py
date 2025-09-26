@@ -76,44 +76,34 @@ class UserNotFoundError(Exception):
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-
-    query = request.args.get('q', '').strip()
-    
-    if query:
-        # Case-insensitive search using regex
-        search_filter = {
-            "status": "published",
-            "$or": [
-                {"title": {"$regex": query, "$options": "i"}},
-                {"content": {"$regex": query, "$options": "i"}},
-                {"tags": {"$regex": query, "$options": "i"}},
-                {"author": {"$regex": query, "$options": "i"}},
-            ]
-        }
-    else:
-        search_filter = {"status": "published"}
-
-//////////////// pokušati pronaći query samo po title
+    query = request.args.get('q', '').strip().lower()
+ 
     titles = titles_collection.find()
-
     titles_with_reviews = []
 
     for title in titles:
         reviews = []
         
-        # Za svaki naslov, dohvatimo sve recenzije povezane s tim naslovom
-        for review_id in title.get('reviews', []):  # Provjeri postoje li recenzije
-            review = reviews_collection.find_one({'_id': review_id})
+
+        for review_id in title.get('reviews', []): 
+            review = reviews_collection.find_one({'_id': review_id, 'status': 'published'})
+            
             if review:
-                reviews.append(review)
+                if query:
+                    if query in review['title'].lower() or \
+                       query in review['book_author'].lower() or \
+                       query in review['content'].lower():
+                        reviews.append(review)
+                else:
+                    reviews.append(review)
 
-        titles_with_reviews.append({
-            'title': title['title'],
-            'reviews': reviews
-        })
-
-    print("Titles with reviews:", titles_with_reviews)  # Dodajemo logiranje za debug
-
+        if reviews:
+            titles_with_reviews.append({
+                'title': title['title'],
+                'book_author': title.get('book_author'),
+                'reviews': reviews
+            })
+    
     return render_template('index.html', titles_with_reviews=titles_with_reviews, query=query)
 
 
@@ -126,9 +116,9 @@ def review_create():
         image_id = save_image_to_gridfs(request, fs)
         review = {
             'title': form.title.data,
-            'author': form.author.data,
+            'book_author': form.book_author.data,
             'content': form.content.data,
-            'review_author': current_user.get_id(),
+            'author': current_user.get_id(),
             'status': form.status.data,
             'date': datetime.combine(form.date.data, datetime.min.time()),
             'tags': form.tags.data,
@@ -141,14 +131,14 @@ def review_create():
             title = titles_collection.find_one({'title':review["title"]})
             if title:
                 titles_collection.update_one(
-                    {'_id': title['_id']},  # Identifikacija dokumenta
-                    {'$push': {'reviews': inserted_id}}  # Dodaj recenziju u 'reviews' listu
+                    {'_id': title['_id']},  
+                    {'$push': {'reviews': inserted_id}} 
                 )
             else:
                 titles_collection.insert_one({
                     'title': review["title"],
-                    'author': review["author"],
-                    'reviews': [inserted_id]  # Dodaj recenziju u novu listu
+                    'book_author': review["book_author"],
+                    'reviews': [inserted_id]  
                 })
             
 
@@ -401,33 +391,28 @@ def localize_status(status):
 # Registirajmo filter za Jinja-u
 app.jinja_env.filters['localize_status'] = localize_status
 
-# Klasa za definiranje potrebe za uređivanjem članka
-class EditReviewNeed2(Need):
-    def __init__(self, review_id):
-        super().__init__('edit_review', review_id)
-
-class EditReviewNeed:
-    def __init__(self, review_id):
-        self.method = 'edit_review'
-        self.value = review_id
 
 # Pomoćna metoda za provjeru prava uređivanja
 def edit_review_permission(review_id):
-    return Permission(EditReviewNeed(str(ObjectId(review_id))))
+    review = reviews_collection.find_one({'_id': ObjectId(review_id)})
+    if not review:
+        return Permission(RoleNeed('nonexistent')) # Effectively denies permission
+    is_admin_or_author = current_user.is_admin or (current_user.get_id() == review.get('author'))
+    
+    if is_admin_or_author:
+        return Permission(RoleNeed('allow_edit'))
+    else:
+        return Permission(RoleNeed('deny_edit'))
 
 @identity_loaded.connect_via(app)
 def on_identity_loaded(sender, identity):
     if current_user.is_authenticated:
         identity.user = current_user
         identity.provides.add(UserNeed(current_user.id))
-        identity.provides.add(RoleNeed('author'))
+        identity.provides.add(RoleNeed('author')) # Every authenticated user is considered an author
         if current_user.is_admin:
             identity.provides.add(RoleNeed('admin'))
-        # Dodajemo EditPostNeed za svaki članak koji je korisnik kreirao
-        user_reviews = reviews_collection.find({"author": current_user.get_id()})
-        for review in user_reviews:
-            identity.provides.add(EditReviewNeed(str(review["_id"])))
-
+            
 
 @app.route('/users', methods=['GET', 'POST'])
 @login_required

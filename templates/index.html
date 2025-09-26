@@ -11,12 +11,21 @@
 
 <ul class="col-8 list-unstyled">
     {% if titles_with_reviews %}
+
+    <form class="d-flex" method="GET" action="{{ url_for('index') }}">
+        <input class="form-control me-2" type="search" name="q" placeholder="Search" aria-label="Search">
+        <button class="btn btn-outline-dark" type="submit">Pretraži</button>
+      </form>
+      <br>
+      
         {% for title_info in titles_with_reviews %}
-        <div class="mb-5">
-            <h2 class="text-dark">{{ title_info.title }}</h2>
-            <h3 class="text-dark">{{ title_info.author }}</h3>
+        
 
             {% if title_info.reviews %}
+            <div class="mb-5">
+                <h2 class="text-dark">{{ title_info.title }}</h2>
+                <h3 class="text-dark">{{ title_info.book_author }}</h3>
+    
                 <ul class="list-unstyled">
                     {% for review in title_info.reviews %}
                     <li class="mb-3 p-3 col-12 border border-dark rounded">
@@ -29,15 +38,16 @@
                         <p>{{ review['content'] | truncate(200) }}</p>
                         <a href="{{ url_for('review_view', review_id=review['_id']) }}">Pročitaj više</a>
                     </li>
+                    <br>
+                    <hr>
                     {% endfor %}
                 </ul>
-            {% else %}
-                <p>Trenutno nema recenzija za ovaj naslov.</p>
+            
             {% endif %}
         </div>
-        <br>
-        <hr>
+
         {% endfor %}
+      
     {% else %}
         <p>Trenutno nema objavljenih recenzija.</p>
         

@@ -16,7 +16,8 @@
     <thead>
         <tr>
             <th>Naslov</th>
-            <th> Autor</th>
+            <th>Autor knjige</th>
+            <th>Autor</th>
             <th>Datum</th>
             <th>Status</th>
             <th>Tagovi</th>
@@ -27,8 +28,8 @@
         {% for review in reviews %}
         <tr>
             <td><a href="{{ url_for('review_view', review_id=review['_id']) }}" class="text-dark text-decoration-none">{{ review.title }}</a></td>
+            <td>{{ review.book_author }}</td>
             <td>{{ review.author }}</td>
-            <td>{{ review.review_author }}</td>
             <td>{{ review.date.strftime('%d.%m.%Y') }}</td>
             <td>{{ review.status | localize_status }}</td>
             <td>{% for tag in review.tags.split(',') %}<span class="badge bg-primary">{{ tag }}</span>{% endfor %}</td>

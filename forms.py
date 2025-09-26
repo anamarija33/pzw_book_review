@@ -6,9 +6,9 @@ from flask_wtf.file import FileAllowed
 
 class ReviewPostForm(FlaskForm):
     title = StringField('Naslov', validators=[DataRequired(), Length(min=1, max=100)])
-    author = StringField('Autor', validators=[DataRequired(), Length(min=5, max=100)])
+    book_author = StringField('Autor', validators=[DataRequired(), Length(min=5, max=100)])
     content = TextAreaField('Sadržaj', render_kw={"id": "markdown-editor"})
-    # author = StringField('Autor', validators=[DataRequired()])
+   # author = StringField('Review Autor', validators=[DataRequired()])
     date = DateField('Datum', default=datetime.today)
     status = RadioField('Status', choices=[('draft', 'Skica'), ('published', 'Objavljeno')], default='draft')
     tags = StringField('Oznake', render_kw={"id": "tags"})

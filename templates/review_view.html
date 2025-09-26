@@ -7,9 +7,9 @@
 {% endblock %}
 
 {% block body %}
-    <div class="col-8">
-        <h2>{{review.title}}</h2>
-        <h3>{{review.author}}</h3>
+    <div class="col-8 container border border-light p-2">
+        <h2>Naslov knjige: {{review.title}}</h2>
+        <h4>Autor knjige: {{review.book_author}}</h4>
         {% if review.image_id %}
         <img src="{{ url_for('serve_image', image_id=review.image_id) }}" class="img-fluid" alt="review image">
         {% endif %}
@@ -17,7 +17,7 @@
         <p class="mt-2">{% for tag in review.tags.split(',') %}
             <span class="badge bg-primary">{{ tag }}</span>
         {% endfor %}</p>
-        <p class="mt-5">{{ review.content | markdown | safe }}</p>
+        <p class="mt-5 text-center ">{{ review.content | markdown | safe }}</p>
         {% if edit_review_permission(review['_id']).can() %}
         <div>
             <a href="{{ url_for('review_edit', review_id=review['_id']) }}" type="button" class="btn btn-primary btn-sm">Uredi</a>
