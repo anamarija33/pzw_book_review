@@ -27,7 +27,7 @@ app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
 
 bootstrap = Bootstrap5(app)
 # client = MongoClient('mongodb://localhost:27017/')
-client = MongoClient(os.getenv('MONGODB_CONNECTION_STRING'))
+client = 'MONGODB_CONNECTION_STRING'
 db = client['pzw_review_database']
 reviews_collection = db['reviews']
 titles_collection = db['titles']
