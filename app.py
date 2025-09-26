@@ -157,25 +157,42 @@ def review_view(review_id):
         flash("Recenzija nije pronađena!", "danger")
         return redirect(url_for('index'))
 
-    return render_template('review_view.html', review=review, edit_review_permission=edit_review_permission)
+    # Pass the check function directly to the template for button visibility
+    return render_template('review_view.html', review=review, can_edit_review=check_review_permission_status)
+
+def check_review_permission_status(review_id):
+    if not current_user.is_authenticated:
+        return False
+    
+    review = reviews_collection.find_one({'_id': ObjectId(review_id)})
+    if not review:
+        return False
+        
+    return current_user.is_admin or (current_user.get_id() == review.get('author'))
+
+# Register the function as a context processor or directly in the template
+# For simplicity, let's register it as a global Jinja function
+app.jinja_env.globals['can_edit_review'] = check_review_permission_status
+
+
+
 
 @app.route('/review/edit/<review_id>', methods=["get", "post"])
 @login_required
 def review_edit(review_id):
-    permission = edit_review_permission(review_id)
-    if not permission.can():
-        abort(403, "Nemate dozvolu za uređivanje ove recenzije.")
-
+    review = check_review_permission(review_id)
+    
     form = ReviewPostForm()
-    review = reviews_collection.find_one({"_id": ObjectId(review_id)})
-
+    
     if request.method == 'GET':
         form.title.data = review['title']
+        form.book_author.data = review['book_author']
         form.content.data = review['content']
         form.date.data = review['date']
         form.tags.data = review['tags']
         form.status.data = review['status']
     elif form.validate_on_submit():
+        # ... (rest of update logic remains the same)
         reviews_collection.update_one(
             {"_id": ObjectId(review_id)},
             {"$set": {
@@ -194,7 +211,7 @@ def review_edit(review_id):
             {"$set": {
                 'image_id': image_id,
             }}
-        )        
+        )
         flash('Članak je uspješno ažuriran.', 'success')
         return redirect(url_for('review_view', review_id = review_id))
     else:
@@ -204,13 +221,12 @@ def review_edit(review_id):
 @app.route('/review/delete/<review_id>', methods=['POST'])
 @login_required
 def delete_review(review_id):
-    permission = edit_review_permission(review_id)
-    if not permission.can():
-        abort(403, "Nemate dozvolu za brisanje ove recenzije.")
-
+     # This call handles the permission check and will abort(403) or abort(404) if needed
+    check_review_permission(review_id)
+    
     reviews_collection.delete_one({"_id": ObjectId(review_id)})
     flash('Recenzija je uspješno obrisana.', 'success')
-    return redirect(url_for('index'))
+    return redirect(url_for('my_reviews')) 
 
 def save_image_to_gridfs(request, fs):
     if 'image' in request.files:
@@ -255,6 +271,22 @@ def login():
             return redirect(next)
         flash('Neispravno korisničko ime ili zaporka!', category='warning')
     return render_template('login.html', form=form)
+
+def check_review_permission(review_id):
+    review = reviews_collection.find_one({'_id': ObjectId(review_id)})
+    if not review:
+        abort(404) # Not Found if review doesn't exist
+    
+    # Permission is granted if:
+    # 1. The user is an admin
+    # OR
+    # 2. The current user is the author of the review
+    if current_user.is_admin or (current_user.get_id() == review.get('author')):
+        return review
+    else:
+        # User is logged in but is not the author or an admin
+        abort(403, "Nemate dozvolu za uređivanje/brisanje ove recenzije.")
+
 
 @app.route('/logout')
 @login_required
