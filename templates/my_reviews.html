@@ -8,10 +8,11 @@
 {% endblock %}
 
 {% block body %}
-
+<div class="d-flex justify-content-between align-items-center mb-4"></div>
 <h2>Moje recenzije</h2>
 
 {% if reviews %}
+<div class="table-responsive">
 <table class="table table-striped">
     <thead>
         <tr>
@@ -32,7 +33,7 @@
             <td>{{ review.author }}</td>
             <td>{{ review.date.strftime('%d.%m.%Y') }}</td>
             <td>{{ review.status | localize_status }}</td>
-            <td>{% for tag in review.tags.split(',') %}<span class="badge bg-primary">{{ tag }}</span>{% endfor %}</td>
+            <td>{% for tag in review.tags.split(',') %}<span class="badge bg-primary text-light">{{ tag }}</span>{% endfor %}</td>
             <td>
                 <a href="{{ url_for('review_edit', review_id=review['_id']) }}" class="btn btn-primary btn-sm">Uredi</a>
                 <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal"
@@ -46,6 +47,7 @@
 </table>
 {% else %}
 <p>Nemate recenzija.</p>
+</div>
 {% endif %}
-
+</div>
 {% endblock %}

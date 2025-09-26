@@ -1,57 +1,90 @@
-{% extends "base.html" %}
-{% block title %}Početna stranica{% endblock %}
-{% block head %}
-	{{ super() }}
-	<style>
-	</style>
-{% endblock %}
+{% extends "base.html" %} {% block title %}Početna stranica {% endblock %} {%
+block head %} {{ super() }}
+<style></style>
+{% endblock %} {% block body %}
 
-{% block body %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-11 col-xl-10">
+            <h1 class="text-center mb-5 display-5 fw-bold text-dark">
+                Sve Objavljene Recenzije Knjiga
+            </h1>
 
+            {% if titles_with_reviews %}
 
-<ul class="col-8 list-unstyled">
-    {% if titles_with_reviews %}
+            <form class="mb-5" method="GET" action="{{ url_for('index') }}">
+                <div class="input-group input-group-lg">
+                    <input class="form-control" type="search" name="q"
+                        placeholder="Pretražite naslov ili autora knjige..." aria-label="Search"
+                        value="{{ request.args.get('q', '') or '' }}" />
+                    <button class="btn btn-dark" type="submit">
+                        <i class="bi bi-search"></i> Pretraži
+                    </button>
+                </div>
+            </form>
 
-    <form class="d-flex" method="GET" action="{{ url_for('index') }}">
-        <input class="form-control me-2" type="search" name="q" placeholder="Search" aria-label="Search">
-        <button class="btn btn-outline-dark" type="submit">Pretraži</button>
-      </form>
-      <br>
-      
-        {% for title_info in titles_with_reviews %}
-        
+            <div class="list-reviews">
+                {% for title_info in titles_with_reviews %} {% if title_info.reviews %}
 
-            {% if title_info.reviews %}
-            <div class="mb-5">
-                <h2 class="text-dark">{{ title_info.title }}</h2>
-                <h3 class="text-dark">{{ title_info.book_author }}</h3>
-    
-                <ul class="list-unstyled">
-                    {% for review in title_info.reviews %}
-                    <li class="mb-3 p-3 col-12 border border-dark rounded">
-                        <p><strong>Autor recenzije: </strong> {{ review['author'] }} - <strong>Datum:</strong> {{ review['date'].strftime('%d.%m.%Y') }}</p>
+                <div class="book-group-card p-4 bg-light rounded shadow-sm border border-secondary-subtle mb-3">
+                    <header class="mb-4 pb-3 border-bottom border-secondary-subtle">
+                        <h2 class="h3 fw-bolder text-primary mb-4 p-4">
+                            {{ title_info.title }}
+                        </h2>
+                        <h3 class="h5 text-muted fst-italic">
+                            Autor knjige: {{ title_info.book_author }}
+                        </h3>
+                    </header>
 
-                        {% if review['image_id'] %}
-                        <img src="{{ url_for('serve_image', image_id=review['image_id']) }}" class="img-fluid" alt="Slika knjige">
-                        {% endif %}
+                    <div class="row row-cols-1 row-cols-md-2 g-4">
+                        {% for review in title_info.reviews %}
+                        <div class="d-flex flex-column bd-highlight mb-3">
+                            <div class="p-3 review-card-item p-2 bd-highlight">
+                                <div class="p-2 bd-highlight">
+                                    {% if review['image_id'] %}
+                                    <img src="{{ url_for('serve_image', image_id=review['image_id']) }}"
+                                        class="review-image-thumbnail shadow-sm mb-1" alt="Slika knjige"
+                                        width="200px" />
+                                    {% endif %}
+                                    <div class="text-justify">
+                                        <p class="mb-0 small text-muted">
+                                            Autor recenzije: <strong>{{ review['author'] }}</strong>
+                                        </p>
+                                        <p class="mb-0 small text-muted">
+                                            Datum: {{ review['date'].strftime('%d.%m.%Y') }}
+                                        </p>
+                                    </div>
+                                </div>
 
-                        <p>{{ review['content'] | truncate(200) }}</p>
-                        <a href="{{ url_for('review_view', review_id=review['_id']) }}">Pročitaj više</a>
-                    </li>
-                    <br>
-                    <hr>
-                    {% endfor %}
-                </ul>
-            
+                                <div class="flex-grow-1">
+                                    <p class="text-dark mb-3">
+                                        {{ review['content'] | truncate(200) }}
+                                    </p>
+                                </div>
+
+                                <div class="mt-auto pt-2 border-top">
+                                    <a href="{{ url_for('review_view', review_id=review['_id']) }}">
+                                        Pročitaj cijelu recenziju
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %} {% endfor %}
+            </div>
+
+            {% else %}
+            <div class="alert alert-info text-center mt-5" role="alert">
+                <h4 class="alert-heading">Nema recenzija!</h4>
+                <p>
+                    Trenutno nema objavljenih recenzija. Pokušajte s drugom pretragom ili
+                    provjerite kasnije.
+                </p>
+            </div>
             {% endif %}
         </div>
-
-        {% endfor %}
-      
-    {% else %}
-        <p>Trenutno nema objavljenih recenzija.</p>
-        
-    {% endif %}
-</ul>
-
+    </div>
+</div>
 {% endblock %}

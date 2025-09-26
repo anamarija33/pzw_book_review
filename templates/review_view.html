@@ -7,7 +7,11 @@
 {% endblock %}
 
 {% block body %}
-    <div class="col-8 container border border-light p-2">
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-8">
+            
+            <header class="text-center mb-5 pb-4 border-bottom border-dark-subtle">
         <h2>Naslov knjige: {{review.title}}</h2>
         <h4>Autor knjige: {{review.book_author}}</h4>
         {% if review.image_id %}
@@ -17,6 +21,7 @@
         <p class="mt-2">{% for tag in review.tags.split(',') %}
             <span class="badge bg-primary">{{ tag }}</span>
         {% endfor %}</p>
+    </header>
         <p class="mt-5 text-center ">{{ review.content | markdown | safe }}</p>
         {% if can_edit_review(review['_id']) %}
         <div>
@@ -27,6 +32,8 @@
             </button>
         </div>
         {% endif %}
-    </div>
-
+    
+</div>
+</div>
+</div>
 {% endblock %}

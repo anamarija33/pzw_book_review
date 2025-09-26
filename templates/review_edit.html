@@ -12,8 +12,15 @@
 {% endblock %}
 
 {% block body %}
-{% from 'bootstrap5/form.html' import render_form %}
-{{ render_form(form) }}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-11 col-xl-10">
+
+            {% from 'bootstrap5/form.html' import render_form %}
+            {{ render_form(form) }}
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -21,8 +28,8 @@
 <!-- Uključi EasyMDE JavaScript -->
 <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
 <script>
-// Inicijalizacija EasyMDE editora
-var easyMDE = new EasyMDE({ element: document.getElementById('markdown-editor') });
+    // Inicijalizacija EasyMDE editora
+    var easyMDE = new EasyMDE({ element: document.getElementById('markdown-editor') });
 </script>
 
 <!-- Uključi i inicijaliziraj Choices.js JS -->
