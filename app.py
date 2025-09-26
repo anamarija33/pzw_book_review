@@ -424,17 +424,6 @@ def localize_status(status):
 app.jinja_env.filters['localize_status'] = localize_status
 
 
-# Pomoćna metoda za provjeru prava uređivanja
-def edit_review_permission(review_id):
-    review = reviews_collection.find_one({'_id': ObjectId(review_id)})
-    if not review:
-        return Permission(RoleNeed('nonexistent')) # Effectively denies permission
-    is_admin_or_author = current_user.is_admin or (current_user.get_id() == review.get('author'))
-    
-    if is_admin_or_author:
-        return Permission(RoleNeed('allow_edit'))
-    else:
-        return Permission(RoleNeed('deny_edit'))
 
 @identity_loaded.connect_via(app)
 def on_identity_loaded(sender, identity):
