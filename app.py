@@ -30,6 +30,7 @@ bootstrap = Bootstrap5(app)
 client = MongoClient(os.getenv('MONGODB_CONNECTION_STRING'))
 db = client['pzw_review_database']
 reviews_collection = db['reviews']
+titles_collection = db['titles']
 users_collection = db['users']
 fs = gridfs.GridFS(db)
 mail = Mail(app)
@@ -75,10 +76,49 @@ class UserNotFoundError(Exception):
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    published_reviews = reviews_collection.find({"status": "published"}).sort('date', -1)
-    return render_template('index.html', reviews = published_reviews)
 
-@app.route('/review/create', methods=["get", "review"])
+    query = request.args.get('q', '').strip()
+    
+    if query:
+        # Case-insensitive search using regex
+        search_filter = {
+            "status": "published",
+            "$or": [
+                {"title": {"$regex": query, "$options": "i"}},
+                {"content": {"$regex": query, "$options": "i"}},
+                {"tags": {"$regex": query, "$options": "i"}},
+                {"author": {"$regex": query, "$options": "i"}},
+            ]
+        }
+    else:
+        search_filter = {"status": "published"}
+
+//////////////// pokušati pronaći query samo po title
+    titles = titles_collection.find()
+
+    titles_with_reviews = []
+
+    for title in titles:
+        reviews = []
+        
+        # Za svaki naslov, dohvatimo sve recenzije povezane s tim naslovom
+        for review_id in title.get('reviews', []):  # Provjeri postoje li recenzije
+            review = reviews_collection.find_one({'_id': review_id})
+            if review:
+                reviews.append(review)
+
+        titles_with_reviews.append({
+            'title': title['title'],
+            'reviews': reviews
+        })
+
+    print("Titles with reviews:", titles_with_reviews)  # Dodajemo logiranje za debug
+
+    return render_template('index.html', titles_with_reviews=titles_with_reviews, query=query)
+
+
+
+@app.route('/review/create', methods=["get", "post"])
 @login_required
 def review_create():
     form = ReviewPostForm()
@@ -86,35 +126,55 @@ def review_create():
         image_id = save_image_to_gridfs(request, fs)
         review = {
             'title': form.title.data,
+            'author': form.author.data,
             'content': form.content.data,
-            'author': current_user.get_id(),
+            'review_author': current_user.get_id(),
             'status': form.status.data,
             'date': datetime.combine(form.date.data, datetime.min.time()),
             'tags': form.tags.data,
             'image_id': image_id,
             'date_created': datetime.utcnow()
         }
-        reviews_collection.insert_one(review)
-        flash('Članak je uspješno upisan.', 'success')
+        
+        inserted_id = reviews_collection.insert_one(review).inserted_id
+        if review["status"] == 'published':
+            title = titles_collection.find_one({'title':review["title"]})
+            if title:
+                titles_collection.update_one(
+                    {'_id': title['_id']},  # Identifikacija dokumenta
+                    {'$push': {'reviews': inserted_id}}  # Dodaj recenziju u 'reviews' listu
+                )
+            else:
+                titles_collection.insert_one({
+                    'title': review["title"],
+                    'author': review["author"],
+                    'reviews': [inserted_id]  # Dodaj recenziju u novu listu
+                })
+            
+
+
+        flash('Recenzija je uspješno objavljena.', 'success')
         return redirect(url_for('index'))
     return render_template('review_edit.html', form=form)
+
+
 
 @app.route('/review/<review_id>')
 def review_view(review_id):
     review = reviews_collection.find_one({'_id': ObjectId(review_id)})
 
     if not review:
-        flash("Članak nije pronađen!", "danger")
+        flash("Recenzija nije pronađena!", "danger")
         return redirect(url_for('index'))
 
     return render_template('review_view.html', review=review, edit_review_permission=edit_review_permission)
 
-@app.route('/review/edit/<review_id>', methods=["get", "review"])
+@app.route('/review/edit/<review_id>', methods=["get", "post"])
 @login_required
 def review_edit(review_id):
     permission = edit_review_permission(review_id)
     if not permission.can():
-        abort(403, "Nemate dozvolu za uređivanje ovog članka.")
+        abort(403, "Nemate dozvolu za uređivanje ove recenzije.")
 
     form = ReviewPostForm()
     review = reviews_collection.find_one({"_id": ObjectId(review_id)})
@@ -156,10 +216,10 @@ def review_edit(review_id):
 def delete_review(review_id):
     permission = edit_review_permission(review_id)
     if not permission.can():
-        abort(403, "Nemate dozvolu za brisanje ovog posta.")
+        abort(403, "Nemate dozvolu za brisanje ove recenzije.")
 
     reviews_collection.delete_one({"_id": ObjectId(review_id)})
-    flash('Članak je uspješno obrisan.', 'success')
+    flash('Recenzija je uspješno obrisana.', 'success')
     return redirect(url_for('index'))
 
 def save_image_to_gridfs(request, fs):

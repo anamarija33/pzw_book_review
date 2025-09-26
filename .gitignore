@@ -3,3 +3,4 @@ pycache/
 .vscode
 *.pyc
 .env
+tempo.txt

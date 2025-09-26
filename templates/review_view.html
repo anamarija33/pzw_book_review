@@ -9,19 +9,20 @@
 {% block body %}
     <div class="col-8">
         <h2>{{review.title}}</h2>
+        <h3>{{review.author}}</h3>
         {% if review.image_id %}
         <img src="{{ url_for('serve_image', image_id=review.image_id) }}" class="img-fluid" alt="review image">
         {% endif %}
-        <h5 class="mt-5">{{review.author}} - {{review.date.strftime('%d.%m.%Y')}}</h5>
+        <h5 class="mt-5"><strong>Autor recenzije: </strong>{{review.author}} - {{review.date.strftime('%d.%m.%Y')}}</h5>
         <p class="mt-2">{% for tag in review.tags.split(',') %}
             <span class="badge bg-primary">{{ tag }}</span>
         {% endfor %}</p>
         <p class="mt-5">{{ review.content | markdown | safe }}</p>
-        {% if edit_post_permission(review['_id']).can() %}
+        {% if edit_review_permission(review['_id']).can() %}
         <div>
             <a href="{{ url_for('review_edit', review_id=review['_id']) }}" type="button" class="btn btn-primary btn-sm">Uredi</a>
             <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal"
-                data-postid="{{ review['_id'] }}">
+                data-reviewid="{{ review['_id'] }}">
                 Briši
             </button>
         </div>
